@@ -21,8 +21,12 @@ def align_htf(base: pd.DataFrame, htf: pd.DataFrame, prefix: str) -> pd.DataFram
     """
     # Ensure htf is indexed by bar CLOSE time (open + 1 period) for no-lookahead.
     if htf.index.name != "close_time":
-        freq = htf.index.freq or pd.tseries.frequencies.to_offset(
-            pd.infer_freq(htf.index))
+        freq = htf.index.freq
+        if freq is None:
+            raise ValueError(
+                "align_htf: htf.index.freq is None (likely loaded from CSV with gaps). "
+                "Call tf_close_index(htf, freq) explicitly before align_htf."
+            )
         htf = htf.copy()
         htf.index = htf.index + freq
         htf.index.name = "close_time"
@@ -30,7 +34,7 @@ def align_htf(base: pd.DataFrame, htf: pd.DataFrame, prefix: str) -> pd.DataFram
     left = base.sort_index().reset_index()
     left_time = left.columns[0]
     right = htf.sort_index().reset_index().rename(
-        columns={"close_time": "_c", "dt": "_c", "index": "_c"})
+        columns={"close_time": "_c"})
     right = right.rename(columns={c: f"{prefix}_{c}" for c in htf.columns})
     merged = pd.merge_asof(
         left, right, left_on=left_time, right_on="_c", direction="backward")
