@@ -8,7 +8,10 @@ def tf_close_index(df: pd.DataFrame, freq: str) -> pd.DataFrame:
     """Reindex a timeframe frame by bar CLOSE time (= open timestamp + 1 period).
     Dukascopy timestamps are bar OPEN times; a bar's data is only known at close."""
     out = df.copy()
+    orig_dtype = out.index.dtype
     out.index = out.index + pd.Timedelta(FREQ.get(freq, freq))
+    # Preserve original datetime resolution (e.g. ms) to avoid merge key mismatch.
+    out.index = out.index.astype(orig_dtype)
     out.index.name = "close_time"
     return out
 
@@ -35,7 +38,8 @@ def align_htf(base: pd.DataFrame, htf: pd.DataFrame, prefix: str) -> pd.DataFram
     left_time = left.columns[0]
     right = htf.sort_index().reset_index().rename(
         columns={"close_time": "_c"})
-    right = right.rename(columns={c: f"{prefix}_{c}" for c in htf.columns})
+    if prefix:
+        right = right.rename(columns={c: f"{prefix}_{c}" for c in htf.columns})
     merged = pd.merge_asof(
         left, right, left_on=left_time, right_on="_c", direction="backward")
     merged = merged.set_index(left_time)
