@@ -24,22 +24,20 @@ def build_signal(row, bias, recent_pivots, atr_floor_mult=1.5, min_rr=2.0,
             return None
         struct_stop = max(cand)                      # nearest swing low below
         stop = min(struct_stop, entry - atr_floor_mult * atr)
+        risk = entry - stop
         tps = [p for p in highs if p > entry]
-        if not tps:
-            return None
-        tp = min(tps)                                # nearest structural high
-        risk, reward = entry - stop, tp - entry
+        tp = min(tps) if tps else entry + min_rr * risk   # fallback: ATR projection
+        reward = tp - entry
     elif bias == -1:
         cand = [p for p in highs if p > entry]
         if not cand:
             return None
         struct_stop = min(cand)
         stop = max(struct_stop, entry + atr_floor_mult * atr)
+        risk = stop - entry
         tps = [p for p in lows if p < entry]
-        if not tps:
-            return None
-        tp = max(tps)
-        risk, reward = stop - entry, entry - tp
+        tp = max(tps) if tps else entry - min_rr * risk   # fallback: ATR projection
+        reward = entry - tp
     else:
         return None
     if risk <= 0:
