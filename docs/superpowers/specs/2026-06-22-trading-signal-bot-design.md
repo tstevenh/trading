@@ -66,7 +66,7 @@ first**; add INTRADAY later as a second config, independently validated.
 | ① Trend/bias (HTF) | Aligned trend | Daily close > 200-SMA **and** 50-SMA > 200-SMA. *(EUR/USD: relax to 50>200.)* |
 | ② Pullback zone (MTF) | Real pullback into value | Price tags H1 20–50 EMA zone; H1 RSI(14) dipped < 45 (long) |
 | ③ Entry trigger (LTF) | Trend resumption | M15 closes back above 20-EMA at the zone, RSI turning up |
-| ④ R:R ≥ 2:1, reachable TP | Fixed TP, no trailing | Stop = pullback swing low, floored at entry − 1.5×ATR. TP at next structural level if it gives ≥2R; else reject. TP must be reachable (at/before structure). |
+| ④ R:R ≥ 2:1, reachable TP | Fixed TP, no trailing | Stop = pullback swing low, floored at entry − 1.5×ATR. TP: prefer the nearest structural level ahead — if it gives ≥2R, use it; if it gives <2R, reject (overhead resistance caps the reachable target). If there is NO structural level ahead (price at new highs in a strong trend), project a fixed 2R target (reachable by construction). This avoids taking zero trades in the strongest uptrends. Projected-vs-structural targets are tagged and compared in the backtest. |
 | ⑤ Session timing | Prime hours only | Enter 07:00–16:00 UTC (prime 12–16). No Asia/late illiquid. |
 | ⑥ News blackout | Avoid high-impact | No new entry −30/+15 min around high-impact USD events (NFP/CPI/FOMC); wider for FOMC. Source: ForexFactory calendar. Fail-safe: block if calendar fetch fails. |
 | ⑦ Risk limits | Portfolio guards | Max 2 concurrent positions; one per instrument; daily-loss stop. |
