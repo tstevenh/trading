@@ -11,6 +11,8 @@ Protocol (anti-overfitting):
 Selection touches ONLY in-sample; OOS is never used to pick anything.
 """
 from __future__ import annotations
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import pandas as pd
 from swingbot import indicators as ind
@@ -18,7 +20,8 @@ from swingbot.search import build_features_rich, run_strategy
 from swingbot.costs import SPREADS
 from swingbot.metrics import summarize
 
-UNIVERSE = ["XAUUSD", "USDJPY", "EURUSD", "USDCHF", "NZDUSD", "GBPUSD", "USDCAD"]
+UNIVERSE = ["XAUUSD", "XAGUSD", "SPX500", "NAS100", "GER40", "JPN225", "UK100",
+            "BTCUSD", "ETHUSD", "EURUSD"]
 CUTOFF = pd.Timestamp("2023-01-01", tz="UTC")
 
 ARCHETYPES = {}
@@ -28,16 +31,20 @@ for name in ["trend_pullback_plus", "breakout_retest", "mean_reversion", "moment
     except Exception as e:  # noqa
         print(f"WARN: could not import {name}: {e}")
 
-print("Loading + building rich features for 7 pairs (one-time)...", flush=True)
+print("Loading + building rich features (one-time)...", flush=True)
 FEATS, RAW = {}, {}
-for sym in UNIVERSE:
+for sym in list(UNIVERSE):
     s = sym.lower()
-    m15 = ind.load_csv(f"data/raw/{s}_m15.csv")
-    h1 = ind.load_csv(f"data/raw/{s}_h1.csv")
-    d1 = ind.load_csv(f"data/raw/{s}_d1.csv")
-    FEATS[sym] = build_features_rich(m15, h1, d1)
-    RAW[sym] = m15
-    print(f"  {sym}: {len(FEATS[sym])} bars", flush=True)
+    try:
+        m15 = ind.load_csv(f"data/raw/{s}_m15.csv")
+        h1 = ind.load_csv(f"data/raw/{s}_h1.csv")
+        d1 = ind.load_csv(f"data/raw/{s}_d1.csv")
+        FEATS[sym] = build_features_rich(m15, h1, d1)
+        RAW[sym] = m15
+        print(f"  {sym}: {len(FEATS[sym])} bars", flush=True)
+    except Exception as e:
+        print(f"  {sym}: SKIPPED ({str(e)[:60]})", flush=True)
+        UNIVERSE.remove(sym)
 
 
 def run_variant(mod, signal_fn):
@@ -76,7 +83,8 @@ def main():
     total_variants = 0
     selected = []
     for name, mod in ARCHETYPES.items():
-        variants = mod.variants()
+        v = mod.variants()
+        variants = list(v.items()) if isinstance(v, dict) else list(v)
         rows = []
         for label, fn in variants:
             total_variants += 1
