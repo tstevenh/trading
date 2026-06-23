@@ -6,3 +6,4 @@ data/raw/
 .superpowers/
 .DS_Store
 .dukascopy-cache/
+.env
