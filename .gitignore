@@ -7,3 +7,5 @@ data/raw/
 .DS_Store
 .dukascopy-cache/
 .env
+live/state.json
+live/journal.csv
