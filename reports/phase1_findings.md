@@ -50,3 +50,10 @@ Only XAU/USD and USD/CAD are OOS-positive, both marginally (PF <1.2). IS↔OOS f
 2. **Raise win rate:** test trigger refinements (e.g., two-sided pullback-zone check; require trend strength via ADX in the score-as-gate; regime filter).
 3. **Get clean M15 data** (different source — Twelve Data / HistData) and test whether M15 entries lift win rate (tighter stops, more setups) — this is also the route to ~1 trade/day.
 4. **Walk-forward** the SSS/AA-only variant before trusting it.
+
+---
+## M15-entry baseline on CLEAN HistData (added 2026-06-23)
+Frequency SOLVED (~1.5 trades/day across universe, ~1,350 OOS trades). But edge still absent:
+trend-pullback OOS expectancy negative on 5/7 pairs (only XAUUSD +0.09, GBPUSD +0.03 positive).
+Tier signal holds (SSS +0.20 > AA -0.08 > A -0.17) but SSS rare (n=12).
+=> trend-pullback alone is NOT the edge. Proceed to multi-archetype search on clean M15.
