@@ -1,0 +1,46 @@
+name: edgewise-scan
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # every 15 min (GitHub best-effort; may run a few min late)
+  workflow_dispatch:          # allow manual runs from the Actions tab
+
+concurrency:
+  group: edgewise-scan         # never overlap runs
+  cancel-in-progress: false
+
+permissions:
+  contents: write              # to commit state/journal back
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Run scan
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+          RISK_PCT: "0.5"
+        run: python -m live.run_live
+
+      - name: Persist state + journal
+        run: |
+          git config user.name "edgewise-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add live/state.json live/journal.csv 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m "state: scan $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+          else
+            echo "no state change"
+          fi

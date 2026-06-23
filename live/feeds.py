@@ -3,25 +3,37 @@ ETHUSD -> Binance (free, UTC ms). EURUSD + SPX500(via SPY) -> Twelve Data (timez
 All return a UTC-indexed DataFrame [open,high,low,close,volume], ascending, with the
 most recent (possibly in-progress) bar DROPPED so we only act on CLOSED bars."""
 from __future__ import annotations
-import urllib.request, urllib.parse, json, pathlib, time
+import os, urllib.request, urllib.parse, json, pathlib, time
 import pandas as pd
 
-_ENV = {}
-for _l in pathlib.Path(".env").read_text().splitlines():
-    _l = _l.strip()
-    if _l and not _l.startswith("#") and "=" in _l:
-        _k, _v = _l.split("=", 1)
-        _ENV[_k.strip()] = _v.split("#")[0].strip()
-TD_KEY = _ENV.get("TWELVEDATA_API_KEY", "")
 
-# instrument -> (source, vendor_symbol)
+def cfg(key, default=""):
+    """Env var first (GitHub Actions Secrets), then local .env file."""
+    if os.environ.get(key):
+        return os.environ[key]
+    p = pathlib.Path(".env")
+    if p.exists():
+        for _l in p.read_text().splitlines():
+            _l = _l.strip()
+            if _l and not _l.startswith("#") and "=" in _l:
+                k, v = _l.split("=", 1)
+                if k.strip() == key:
+                    return v.split("#")[0].strip()
+    return default
+
+
+TD_KEY = cfg("TWELVEDATA_API_KEY")
+
+# instrument -> (source, vendor_symbol). ETH via Kraken (Binance is geo-blocked on
+# GitHub Actions runners). EURUSD + SPX500(SPY) via Twelve Data.
 FEEDS = {
-    "ETHUSD": ("binance", "ETHUSDT"),
+    "ETHUSD": ("kraken", "ETHUSD"),
     "EURUSD": ("twelvedata", "EUR/USD"),
     "SPX500": ("twelvedata", "SPY"),       # SPY ETF as the live S&P 500 proxy
 }
 BINANCE_IV = {"m15": "15m", "h1": "1h", "d1": "1d"}
 TD_IV = {"m15": "15min", "h1": "1h", "d1": "1day"}
+KRAKEN_IV = {"m15": 15, "h1": 60, "d1": 1440}
 
 
 def _get(url, tries=3):
@@ -62,9 +74,24 @@ def _twelvedata(sym, tf, n):
     return df.set_index("dt")[["open", "high", "low", "close", "volume"]].sort_index()
 
 
+def _kraken(sym, tf, n):
+    url = f"https://api.kraken.com/0/public/OHLC?pair={sym}&interval={KRAKEN_IV[tf]}"
+    js = _get(url)
+    res = js.get("result", {})
+    keys = [k for k in res if k != "last"]
+    if not keys:
+        raise RuntimeError(f"kraken {sym} {tf}: {str(js)[:120]}")
+    rows = res[keys[0]]
+    df = pd.DataFrame(rows, columns=["t", "open", "high", "low", "close", "vwap", "volume", "count"])
+    for c in ["open", "high", "low", "close", "volume"]:
+        df[c] = df[c].astype(float)
+    df["dt"] = pd.to_datetime(df["t"], unit="s", utc=True)
+    return df.set_index("dt")[["open", "high", "low", "close", "volume"]].sort_index().tail(n)
+
+
 def fetch(instrument: str, tf: str, n: int, drop_forming: bool = True) -> pd.DataFrame:
     src, sym = FEEDS[instrument]
-    df = _binance(sym, tf, n) if src == "binance" else _twelvedata(sym, tf, n)
+    df = ({"binance": _binance, "twelvedata": _twelvedata, "kraken": _kraken}[src])(sym, tf, n)
     if drop_forming and len(df) > 1:
         df = df.iloc[:-1]          # drop the most recent (still-forming) bar
     return df

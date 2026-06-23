@@ -2,10 +2,9 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-data/raw/
+data/
 .superpowers/
 .DS_Store
 .dukascopy-cache/
 .env
-live/state.json
-live/journal.csv
+reports/*.log

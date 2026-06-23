@@ -16,14 +16,10 @@ import pandas as pd
 from swingbot.search import build_features_rich
 from swingbot.backtest import _recent_pivots
 from live import feeds
+from live.feeds import cfg
 
-ENV = {}
-for _l in pathlib.Path(".env").read_text().splitlines():
-    _l = _l.strip()
-    if _l and not _l.startswith("#") and "=" in _l:
-        _k, _v = _l.split("=", 1); ENV[_k.strip()] = _v.split("#")[0].strip()
-TOK, CHAT = ENV.get("TELEGRAM_BOT_TOKEN", ""), ENV.get("TELEGRAM_CHAT_ID", "")
-RISK_PCT = ENV.get("RISK_PCT", "0.5")
+TOK, CHAT = cfg("TELEGRAM_BOT_TOKEN"), cfg("TELEGRAM_CHAT_ID")
+RISK_PCT = cfg("RISK_PCT", "0.5")
 
 STATE = pathlib.Path("live/state.json")
 JOURNAL = pathlib.Path("live/journal.csv")
