@@ -40,6 +40,25 @@ def run_all(symbols=UNIVERSE):
     return results
 
 
+def _tier_table(results):
+    from collections import defaultdict
+    buckets = defaultdict(list)
+    for r in results.values():
+        for t in r["trades"]:
+            if t.entry_ts >= CUTOFF:           # OOS only
+                buckets[t.tier].append(t.outcome_r)
+    out = ["\n## OOS expectancy by tier (does higher tier win more?)\n",
+           "| Tier | n | win% | expectancy(R) |", "|---|---|---|---|"]
+    for tier in ("A", "AA", "SSS"):
+        rs = buckets.get(tier, [])
+        if rs:
+            wr = sum(1 for x in rs if x > 0) / len(rs)
+            out.append(f"| {tier} | {len(rs)} | {wr*100:.0f}% | {sum(rs)/len(rs):+.2f} |")
+        else:
+            out.append(f"| {tier} | 0 | – | – |")
+    return "\n".join(out)
+
+
 def render_report(results) -> str:
     lines = ["# Phase 1 — Backtest Validation Report\n",
              "_Trend-pullback swing profile. IS = pre-2023, OOS = 2023+. "
@@ -53,7 +72,7 @@ def render_report(results) -> str:
             f"| {sym} | {a['n']} | {a['win_rate']*100:.0f}% | {a['expectancy_r']:+.2f} "
             f"| {a['profit_factor']:.2f} | {b['n']} | {b['win_rate']*100:.0f}% | "
             f"{b['expectancy_r']:+.2f} | {b['profit_factor']:.2f} | {b['max_drawdown_r']:.1f} |")
-    return "\n".join(lines)
+    return "\n".join(lines) + "\n" + _tier_table(results)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 from swingbot import gates
 from swingbot.strategy import build_signal
+from swingbot.grading import confluence_score, tier_of
 
 
 @dataclass
@@ -19,6 +20,8 @@ class Trade:
     outcome_r: float
     bars_held: int
     reason: str
+    score: int = 0
+    tier: str = "A"
 
 
 def _recent_pivots(highs, lows, i, lookback, k=2):
@@ -77,9 +80,11 @@ def run_backtest(instrument, feats, m15_raw, spread, relaxed_trend=False,
                     exit_px, reason, j = closes[n - 1], "eod", n - 1
                 pnl = (exit_px - entry) * side
                 outcome_r = pnl / risk if risk > 0 else 0.0
+                score = confluence_score(row, sig, piv)
                 trades.append(Trade(instrument, side, t, entry, stop, tp,
                                     f.index[j], exit_px, sig.rr, outcome_r,
-                                    j - (i + 1), reason))
+                                    j - (i + 1), reason,
+                                    score=score, tier=tier_of(score)))
                 i = j + 1                            # no overlapping positions
                 continue
         i += 1
