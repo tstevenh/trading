@@ -96,15 +96,55 @@ def sim_scaleout(side, entry, stop, risk, highs, lows, closes, atrs, start, half
     return side * (closes[n - 1] - entry) / risk, n - 1 - start
 
 
+def sim_breakeven(side, entry, stop, risk, highs, lows, closes, atrs, start, half, move_at, rr):
+    """Move stop to breakeven once price reaches +move_at*risk; fixed target at rr."""
+    tp = entry + side * rr * risk
+    be_trig = entry + side * move_at * risk
+    cur = stop; n = len(highs)
+    for j in range(start, n):
+        if side == 1:
+            if lows[j] <= cur:  return (cur - half - entry) / risk, j - start
+            if highs[j] >= tp:  return (tp - half - entry) / risk, j - start
+            if highs[j] >= be_trig: cur = max(cur, entry)
+        else:
+            if highs[j] >= cur: return (entry - (cur + half)) / risk, j - start
+            if lows[j] <= tp:   return (entry - (tp + half)) / risk, j - start
+            if lows[j] <= be_trig: cur = min(cur, entry)
+    return side * (closes[n - 1] - entry) / risk, n - 1 - start
+
+
+def sim_partial_fixed(side, entry, stop, risk, highs, lows, closes, atrs, start, half, t1, frac, run_rr):
+    """Bank frac at +t1*risk, move stop to breakeven, runner targets fixed run_rr (NO trail)."""
+    t1_px = entry + side * t1 * risk
+    run_tp = entry + side * run_rr * risk
+    n = len(highs)
+    for j in range(start, n):
+        if side == 1 and lows[j] <= stop:  return (stop - half - entry) / risk, j - start
+        if side == -1 and highs[j] >= stop: return (entry - (stop + half)) / risk, j - start
+        hit = (highs[j] >= t1_px) if side == 1 else (lows[j] <= t1_px)
+        if hit:
+            banked = frac * (((t1_px - half - entry) / risk) if side == 1 else ((entry - (t1_px + half)) / risk))
+            for k in range(j, n):           # runner: BE stop, fixed run_tp, no trail
+                if side == 1:
+                    if lows[k] <= entry:   return banked + (1 - frac) * ((entry - half - entry) / risk), k - start
+                    if highs[k] >= run_tp: return banked + (1 - frac) * ((run_tp - half - entry) / risk), k - start
+                else:
+                    if highs[k] >= entry:  return banked + (1 - frac) * ((entry - (entry + half)) / risk), k - start
+                    if lows[k] <= run_tp:  return banked + (1 - frac) * ((entry - (run_tp + half)) / risk), k - start
+            return banked + (1 - frac) * side * (closes[n - 1] - entry) / risk, n - 1 - start
+    return side * (closes[n - 1] - entry) / risk, n - 1 - start
+
+
 POLICIES = {
-    "fixed_2.0(base)": lambda *a: sim_fixed(*a, 2.0),
-    "fixed_2.5":       lambda *a: sim_fixed(*a, 2.5),
-    "fixed_3.0":       lambda *a: sim_fixed(*a, 3.0),
-    "scaleout_2_.5_3": lambda *a: sim_scaleout(*a, 2.0, 0.5, 3.0),
-    "scaleout_2_.7_2": lambda *a: sim_scaleout(*a, 2.0, 0.7, 2.0),
-    "atrtrail_1.5_3":  lambda *a: sim_atrtrail(*a, 1.5, 3.0),
-    "atrtrail_1.0_2":  lambda *a: sim_atrtrail(*a, 1.0, 2.0),
-    "timestop_2_100":  lambda *a: sim_timestop(*a, 2.0, 100),
+    "fixed_2.0(base)":  lambda *a: sim_fixed(*a, 2.0),
+    "fixed_3.0":        lambda *a: sim_fixed(*a, 3.0),
+    "breakeven@1R_t2":  lambda *a: sim_breakeven(*a, 1.0, 2.0),
+    "breakeven@1R_t3":  lambda *a: sim_breakeven(*a, 1.0, 3.0),
+    "breakeven@1.5_t3": lambda *a: sim_breakeven(*a, 1.5, 3.0),
+    "partial.5@1R_run3": lambda *a: sim_partial_fixed(*a, 1.0, 0.5, 3.0),
+    "partial.5@2R_run4": lambda *a: sim_partial_fixed(*a, 2.0, 0.5, 4.0),
+    "partial.7@1.5_run3": lambda *a: sim_partial_fixed(*a, 1.5, 0.7, 3.0),
+    "atrtrail_1.0_2":   lambda *a: sim_atrtrail(*a, 1.0, 2.0),
 }
 
 
