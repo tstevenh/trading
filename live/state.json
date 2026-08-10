@@ -1,19 +1,4 @@
 {
   "EURUSD": null,
-  "ETHUSD": {
-    "key": "ETHUSD",
-    "arch": "trend_pullback_plus",
-    "variant": "tpp_adx18_rsi45_relaxed",
-    "side": -1,
-    "entry": 1908.63,
-    "stop": 1920.99,
-    "risk": 12.3599999999999,
-    "tp": 1871.5500000000004,
-    "t1": 1.0,
-    "frac": 0.5,
-    "runner_rr": 3.0,
-    "partial_done": false,
-    "banked": 0.0,
-    "entry_ts": "2026-08-09 23:45:00+00:00"
-  }
+  "ETHUSD": null
 }
