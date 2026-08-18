@@ -1,19 +1,4 @@
 {
-  "EURUSD": {
-    "key": "EURUSD",
-    "arch": "trend_pullback_plus",
-    "variant": "tpp_adx18_rsi48",
-    "side": -1,
-    "entry": 1.157,
-    "stop": 1.15807,
-    "risk": 0.0010699999999999044,
-    "tp": 1.1548600000000002,
-    "t1": null,
-    "frac": 0.0,
-    "runner_rr": 2.0,
-    "partial_done": false,
-    "banked": 0.0,
-    "entry_ts": "2026-08-18 05:00:00+00:00"
-  },
+  "EURUSD": null,
   "ETHUSD": null
 }
